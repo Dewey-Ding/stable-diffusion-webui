@@ -353,7 +353,11 @@ def api_only():
     modules.script_callbacks.app_started_callback(None, app)
 
     print(f"Startup time: {startup_timer.summary()}.")
-    api.launch(server_name="0.0.0.0" if cmd_opts.listen else "127.0.0.1", port=cmd_opts.port if cmd_opts.port else 7861)
+    if cmd_opts.subpath and cmd_opts.subpath != "":
+        api.launch(server_name="0.0.0.0" if cmd_opts.listen else "127.0.0.1", port=cmd_opts.port if cmd_opts.port else 7861,root_path = f"/{cmd_opts.subpath}")
+    else:
+        api.launch(server_name="0.0.0.0" if cmd_opts.listen else "127.0.0.1",
+                   port=cmd_opts.port if cmd_opts.port else 7861)
 
 
 def stop_route(request):
@@ -392,19 +396,37 @@ def webui():
             FastAPI.original_setup = FastAPI.setup
             FastAPI.setup = fastapi_setup
 
-        app, local_url, share_url = shared.demo.launch(
-            share=cmd_opts.share,
-            server_name=server_name,
-            server_port=cmd_opts.port,
-            ssl_keyfile=cmd_opts.tls_keyfile,
-            ssl_certfile=cmd_opts.tls_certfile,
-            ssl_verify=cmd_opts.disable_tls_verify,
-            debug=cmd_opts.gradio_debug,
-            auth=gradio_auth_creds,
-            inbrowser=cmd_opts.autolaunch,
-            prevent_thread_lock=True,
-            allowed_paths=cmd_opts.gradio_allowed_path,
-        )
+        if cmd_opts.subpath and cmd_opts.subpath != "":
+
+            app, local_url, share_url = shared.demo.launch(
+                share=cmd_opts.share,
+                server_name=server_name,
+                server_port=cmd_opts.port,
+                ssl_keyfile=cmd_opts.tls_keyfile,
+                ssl_certfile=cmd_opts.tls_certfile,
+                ssl_verify=cmd_opts.disable_tls_verify,
+                debug=cmd_opts.gradio_debug,
+                auth=gradio_auth_creds,
+                inbrowser=cmd_opts.autolaunch,
+                prevent_thread_lock=True,
+                allowed_paths=cmd_opts.gradio_allowed_path,
+                root_path=f"/{cmd_opts.subpath}"
+            )
+        else:
+            app, local_url, share_url = shared.demo.launch(
+                share=cmd_opts.share,
+                server_name=server_name,
+                server_port=cmd_opts.port,
+                ssl_keyfile=cmd_opts.tls_keyfile,
+                ssl_certfile=cmd_opts.tls_certfile,
+                ssl_verify=cmd_opts.disable_tls_verify,
+                debug=cmd_opts.gradio_debug,
+                auth=gradio_auth_creds,
+                inbrowser=cmd_opts.autolaunch,
+                prevent_thread_lock=True,
+                allowed_paths=cmd_opts.gradio_allowed_path,
+            )
+
         if cmd_opts.add_stop_route:
             app.add_route("/_stop", stop_route, methods=["POST"])
 
@@ -434,10 +456,10 @@ def webui():
 
         print(f"Startup time: {startup_timer.summary()}.")
 
-        if cmd_opts.subpath:
-            redirector = FastAPI()
-            redirector.get("/")
-            gradio.mount_gradio_app(redirector, shared.demo, path=f"/{cmd_opts.subpath}")
+        # if cmd_opts.subpath:
+        #     redirector = FastAPI()
+        #     redirector.get("/")
+        #     gradio.mount_gradio_app(redirector, shared.demo, path=f"/{cmd_opts.subpath}")
 
         try:
             while True:
